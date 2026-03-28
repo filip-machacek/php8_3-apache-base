@@ -1,7 +1,7 @@
 # =========================================
-# 1. Base image
+# 1. Base image (Zafixováno na Debian 12 Bookworm)
 # =========================================
-FROM php:8.3-fpm
+FROM php:8.3-fpm-bookworm
 
 # =========================================
 # 2. Apache + system libraries
@@ -12,29 +12,31 @@ RUN apt-get update && apt-get install -y \
     libonig-dev libzip-dev libbz2-dev libxml2-dev \
     libicu-dev libpng-dev libjpeg-dev libfreetype6-dev \
     libmagickwand-dev libtidy-dev libxslt1-dev libgmp-dev \
-    libkrb5-dev \
+    libc-client-dev libkrb5-dev libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # =========================================
 # 3. PHP extensions
 # =========================================
-
+# Konfigurace GD
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install gd
 
+# Konfigurace IMAP (Nutný prefix PHP_OPENSSL=yes pro správný link v Debian Bookworm)
+RUN PHP_OPENSSL=yes docker-php-ext-configure imap --with-kerberos --with-imap-ssl \
+    && docker-php-ext-install imap
+
+# Instalace zbytku extenzí (bez gd a imap, ty už jsou zkompilované výše)
 RUN docker-php-ext-install \
     bcmath bz2 calendar exif intl mbstring mysqli pdo pdo_mysql \
-    soap sockets tidy xsl gmp zip opcache ftp imap
+    soap sockets tidy xsl gmp zip opcache ftp
 
-# IMAP explicit configuration (important!)
-RUN docker-php-ext-configure imap --with-kerberos --with-imap-ssl
-
-# Imagick
+# Imagick z PECL
 RUN pecl install imagick \
     && docker-php-ext-enable imagick
 
 # =========================================
-# 4. Apache modules
+# 4. Apache moduly
 # =========================================
 RUN a2dismod mpm_prefork && \
     a2enmod mpm_event rewrite headers expires deflate remoteip proxy_fcgi setenvif \
@@ -45,4 +47,7 @@ RUN echo '<FilesMatch \.php$>\n\
 </FilesMatch>' > /etc/apache2/conf-available/php-fpm.conf \
     && a2enconf php-fpm
 
+# =========================================
+# 5. Composer
+# =========================================
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
