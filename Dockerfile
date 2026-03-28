@@ -12,18 +12,24 @@ RUN apt-get update && apt-get install -y \
     libonig-dev libzip-dev libbz2-dev libxml2-dev \
     libicu-dev libpng-dev libjpeg-dev libfreetype6-dev \
     libmagickwand-dev libtidy-dev libxslt1-dev libgmp-dev \
+    libc-client-dev libkrb5-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # =========================================
 # 3. PHP extensions
 # =========================================
-RUN docker-php-ext-install \
-    bcmath bz2 calendar exif intl mbstring mysqli pdo pdo_mysql \
-    soap sockets tidy xsl gmp zip opcache ftp
 
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install gd
 
+RUN docker-php-ext-install \
+    bcmath bz2 calendar exif intl mbstring mysqli pdo pdo_mysql \
+    soap sockets tidy xsl gmp zip opcache ftp imap
+
+# IMAP explicit configuration (important!)
+RUN docker-php-ext-configure imap --with-kerberos --with-imap-ssl
+
+# Imagick
 RUN pecl install imagick \
     && docker-php-ext-enable imagick
 
@@ -34,11 +40,9 @@ RUN a2dismod mpm_prefork && \
     a2enmod mpm_event rewrite headers expires deflate remoteip proxy_fcgi setenvif \
     && echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
-
 RUN echo '<FilesMatch \.php$>\n\
     SetHandler "proxy:fcgi://127.0.0.1:9000"\n\
 </FilesMatch>' > /etc/apache2/conf-available/php-fpm.conf \
     && a2enconf php-fpm
-
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
