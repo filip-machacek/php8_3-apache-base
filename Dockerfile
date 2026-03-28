@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
     libonig-dev libzip-dev libbz2-dev libxml2-dev \
     libicu-dev libpng-dev libjpeg-dev libfreetype6-dev \
     libmagickwand-dev libtidy-dev libxslt1-dev libgmp-dev \
-    libc-client-dev libkrb5-dev \
+    libkrb5-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # =========================================
