@@ -1,6 +1,6 @@
 # =========================================
 # 1. Base image (Zafixováno na Debian 12 Bookworm)
-# re-trig
+# re-trig 2
 # =========================================
 FROM php:8.3-fpm-bookworm
 
